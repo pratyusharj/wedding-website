@@ -7,6 +7,33 @@ const state = {
   images: { backgrounds: [], gallery: [] },
 };
 
+const guestProfiles = {
+  "John Doe": {
+    access: "all",
+    groups: ["Event Info Access", "LA Wedding"],
+    household: ["John Doe", "Partner Guest"],
+    mainEvents: ["ceremony", "reception"],
+    preWedding: false,
+    soCal: true,
+  },
+  "Jane Doe": {
+    access: "limited",
+    groups: ["Event Info Access"],
+    household: ["Jane Doe"],
+    mainEvents: ["ceremony", "reception"],
+    preWedding: false,
+    soCal: false,
+  },
+  "Jacob Doe": {
+    access: "limited",
+    groups: ["Event Info Access", "bridal shower"],
+    household: ["Jacob Doe"],
+    mainEvents: ["ceremony", "reception", "preWedding"],
+    preWedding: true,
+    soCal: false,
+  },
+};
+
 const mainEvents = [
   {
     title: "CEREMONY",
@@ -69,36 +96,81 @@ const faqs = [
   ["can i bring a gift?", "we are so grateful for your presence, and are honored that you want to give us a gift. please check out the \"gifts\" section of the website for more information."],
 ];
 
+const titleImages = {
+  rsvp: 1,
+  events: 1,
+  travel: 2,
+  style: 3,
+  telugu: 4,
+  registry: 6,
+  faq: 6,
+  socal: 7,
+};
+
 function normalizeName(name) {
   return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function guestHasGroup(group) {
+  return guestProfiles[state.guest]?.groups.includes(group) ?? false;
 }
 
 function onLogin(event) {
   event.preventDefault();
   const name = document.querySelector("#guestName").value;
-  const normalized = normalizeName(name);
-  if (normalized === "john doe") {
-    state.guest = "John Doe";
-    state.access = "all";
-    renderSite();
-  } else if (normalized === "jane doe") {
-    state.guest = "Jane Doe";
-    state.access = "limited";
-    renderSite();
+  const guest = Object.keys(guestProfiles).find((profile) => normalizeName(profile) === normalizeName(name));
+  if (guest) {
+    loginAs(guest);
   } else {
-    document.querySelector(".login-error").textContent = "Please enter John Doe or Jane Doe.";
+    document.querySelector(".login-error").textContent = "Please enter John Doe, Jane Doe, or Jacob Doe.";
+  }
+}
+
+function loginAs(guest) {
+  const profile = guestProfiles[guest];
+  if (profile) {
+    state.guest = guest;
+    state.access = profile.access;
+    renderSite();
   }
 }
 
 function renderLogin() {
   document.querySelector("#app").innerHTML = `
     <main class="login">
-      <form class="login-panel" onsubmit="onLogin(event)">
+      <div class="login-panel">
         <h2>Welcome to our Site!</h2>
-        <input id="guestName" autocomplete="name" placeholder="Enter your full name to login" />
-        <button type="submit"><span>Submit</span></button>
-        <p class="login-error"></p>
-      </form>
+        <form class="login-form" onsubmit="onLogin(event)">
+          <input id="guestName" autocomplete="name" placeholder="Enter your full name to login" />
+          <button type="submit"><span>Submit</span></button>
+          <p class="login-error"></p>
+        </form>
+        <section class="access-demo" aria-labelledby="access-demo-title">
+          <p class="access-kicker">GUEST ACCESS PREVIEW</p>
+          <h3 id="access-demo-title">Different invitations, different views.</h3>
+          <div class="access-profiles">
+            <article class="access-profile">
+              <div class="profile-heading"><h4>John Doe</h4><span>Full invitation</span></div>
+              <p>Main wedding + SoCal wedding</p>
+              <p>RSVP: ceremony + reception; no pre-wedding event</p>
+              <p>John and a partner guest</p>
+              <button type="button" class="profile-preview" onclick="loginAs('John Doe')">Preview as John <span aria-hidden="true">→</span></button>
+            </article>
+            <article class="access-profile">
+              <div class="profile-heading"><h4>Jane Doe</h4><span>Main invitation</span></div>
+              <p>Main wedding only</p>
+              <p>RSVP for Jane only</p>
+              <button type="button" class="profile-preview" onclick="loginAs('Jane Doe')">Preview as Jane <span aria-hidden="true">→</span></button>
+            </article>
+            <article class="access-profile">
+              <div class="profile-heading"><h4>Jacob Doe</h4><span>Pre-wedding invitation</span></div>
+              <p>Main wedding + pre-wedding event</p>
+              <p>RSVP for Jacob only</p>
+              <button type="button" class="profile-preview" onclick="loginAs('Jacob Doe')">Preview as Jacob <span aria-hidden="true">→</span></button>
+            </article>
+          </div>
+        </section>
+      </div>
     </main>
   `;
 }
@@ -131,22 +203,22 @@ function rsvpEvent(name) {
 
 function renderRsvpEvents() {
   const main = [
-    "March 14 2025 9:30am - Wedding Ceremony",
-    "March 14 2025 6pm - Cocktail Hour and Wedding Reception",
-    "March 13 2025 9:30am - Pellikuthuru & Pellikoduku (Telugu Bride & Groom Shower)",
+    { id: "ceremony", label: "March 14 2025 9:30am - Wedding Ceremony" },
+    { id: "reception", label: "March 14 2025 6pm - Cocktail Hour and Wedding Reception" },
+    { id: "preWedding", label: "March 13 2025 9:30am - Pellikuthuru & Pellikoduku (Telugu Bride & Groom Shower)" },
   ];
   const soCal = [
-    "March 9 2025 10:30am - Jewish Wedding Ceremony",
-    "March 9 2025 11:15am - Cocktail Hour",
-    "March 9 2025 12:00pm - Brunch Reception",
+    { id: "socalCeremony", label: "March 9 2025 10:30am - Jewish Wedding Ceremony" },
+    { id: "socalCocktail", label: "March 9 2025 11:15am - Cocktail Hour" },
+    { id: "socalReception", label: "March 9 2025 12:00pm - Brunch Reception" },
   ];
-  const household = state.access === "all" ? ["John Doe", "Partner Guest"] : ["Jane Doe"];
-  const events = state.access === "all" ? [...main, ...soCal] : main;
-  return household
+  const profile = guestProfiles[state.guest];
+  const events = [...main.filter(({ id }) => profile.mainEvents.includes(id) && (id !== "preWedding" || profile.preWedding)), ...(profile.soCal ? soCal : [])];
+  return profile.household
     .map((person) => `
       <div class="rsvp-card">
         <input class="large disable" value="${person}" aria-label="Guest Name" />
-        ${events.map(rsvpEvent).join("")}
+        ${events.map(({ label }) => rsvpEvent(label)).join("")}
       </div>
     `)
     .join("");
@@ -169,18 +241,49 @@ function changeRsvp(button) {
 function navLinks() {
   const links = [
     ["#home", "HOME"],
-    ["#rsvp", "RSVP HERE"],
-    ["#events", "MAIN EVENTS"],
-    ["#before", "SUB EVENT"],
-    ["#travel", "TRAVEL"],
     ["#style", "STYLE GUIDE"],
     ["#telugu", "MORE ABOUT TELUGU WEDDINGS"],
     ["#registry", "REGISTRY"],
-    ["#faq", "FAQ"],
   ];
-  if (state.access === "all") links.push(["#socal", "THE SO CAL WEDDING"]);
+  if (guestHasGroup("Event Info Access")) {
+    links.splice(1, 0, ["#rsvp", "RSVP HERE"], ["#events", "MAIN EVENTS"]);
+    links.push(["#travel", "TRAVEL"], ["#faq", "FAQ"]);
+  }
+  if (guestHasGroup("bridal shower")) links.push(["#before", "SUB EVENT"]);
+  if (guestHasGroup("LA Wedding")) links.push(["#socal", "THE SO CAL WEDDING"]);
   links.push(["#gallery-sj", "GALLERY - SAN JOSE"], ["#gallery-ucla", "GALLERY - UCLA"]);
-  return links.map(([href, label]) => `<a href="${href}" onclick="closeMenu()">${label}</a>`).join("");
+  return links.map(([href, label]) => `<a href="${href}" onclick="${href === "#rsvp" ? "openRsvp(event); " : ""}closeMenu()">${label}</a>`).join("");
+}
+
+function titleBand(title, key, options = {}) {
+  const file = state.images.backgrounds[titleImages[key]] || state.images.backgrounds[0];
+  const style = file ? ` style="background-image:url('${img(file)}')"` : "";
+  const className = ["title-band", options.red ? "red-title" : "", options.accent ? "accent-title" : "", options.bottom ? "align-bottom" : ""].filter(Boolean).join(" ");
+  return `<div class="${className}"${style}><h2>${title}</h2></div>`;
+}
+
+function revealRsvp() {
+  document.querySelector("#rsvp")?.classList.remove("hidden-rsvp");
+}
+
+function scrollToRsvp() {
+  document.querySelector("#rsvp")?.scrollIntoView({ block: "start", behavior: "instant" });
+}
+
+function openRsvp(event) {
+  event?.preventDefault();
+  revealRsvp();
+  if (window.location.hash !== "#rsvp") {
+    history.pushState(null, "", "#rsvp");
+  }
+  window.setTimeout(scrollToRsvp, 430);
+}
+
+function syncRsvpReveal() {
+  if (window.location.hash === "#rsvp") {
+    revealRsvp();
+    window.setTimeout(scrollToRsvp, 430);
+  }
 }
 
 function renderSite() {
@@ -196,14 +299,14 @@ function renderSite() {
     </nav>
     <main>
       <section id="home" class="hero" style="background-image:url('${img(bg[0] || "84e14f2cde84607ecc7bf9971b44715c.jpeg")}')"></section>
-      <section class="section" id="rsvp-link"><div class="inner"><a href="#rsvp"><h2 class="display">Click to RSVP</h2></a></div></section>
-      <section class="rsvp-shell" id="rsvp">
+      ${guestHasGroup("Event Info Access") ? `<section class="section cover-section" id="rsvp-link"><a href="#rsvp" onclick="openRsvp(event)">${titleBand("Click to RSVP", "rsvp", { red: true })}</a></section>
+      <section class="rsvp-shell hidden-rsvp" id="rsvp">
         <form class="rsvp" onsubmit="onRsvp(event)">
           <div class="rsvp-intro">
             <h2>Kindly Respond</h2>
             <h4>We cannot wait to celebrate with you! Please RSVP and/or book your stay by December 14, 2024.</h4>
           </div>
-          <div class="form-fields">
+          <div class="form-fields show">
             ${renderRsvpEvents()}
             <div class="rsvp-card">
               <h3>I would be the first one on the dance floor if the DJ played...</h3>
@@ -211,7 +314,7 @@ function renderSite() {
             </div>
             <button class="scripted-button" type="submit"><span>Submit Response</span></button>
           </div>
-          <div class="confirmation show confirm-box">
+          <div class="confirmation confirm-box">
             <h3>Thank you for your reply.</h3>
             <p><a class="script-link" href="#rsvp" onclick="changeRsvp(this); return false;">↻ Change my RSVP</a></p>
             <div class="copy-row">
@@ -221,31 +324,31 @@ function renderSite() {
             </div>
           </div>
         </form>
-      </section>
-      <section class="section" id="events"><div class="inner"><h2 class="subdisplay">EVENTS</h2><div class="event-grid">${mainEvents.map(eventCard).join("")}</div></div></section>
-      <section class="section alt" id="before"><div class="inner"><h2 class="subdisplay">Before the Wedding</h2><div class="event-grid">${preWedding.map(eventCard).join("")}</div></div></section>
-      <section class="section photo" id="travel" style="background-image:url('${img(bg[2] || bg[0])}')"><div class="inner light"><h2 class="subdisplay">Travel & Accommodation</h2><div class="three-grid">
+      </section>` : ""}
+      ${guestHasGroup("Event Info Access") ? `<section class="section live-section" id="events">${titleBand("EVENTS", "events")}<div class="content-block"><div class="event-grid">${mainEvents.map(eventCard).join("")}</div></div></section>` : ""}
+      ${guestHasGroup("bridal shower") ? `<section class="section live-section no-band" id="before"><div class="content-block narrow"><h2 class="subdisplay">Before the Wedding</h2><div class="event-grid single">${preWedding.map(eventCard).join("")}</div></div></section>` : ""}
+      ${guestHasGroup("Event Info Access") ? `<section class="section live-section" id="travel">${titleBand("Travel & Accommodation", "travel")}<div class="content-block"><div class="three-grid">
         <article class="info-block"><h3>FLIGHTS</h3><h4>FLY DIRECTLY INTO SAN JOSE<br>OR DRIVE IN FROM SAN FRANCISCO</h4><a class="script-link" href="https://www.expedia.com/" target="_blank" rel="noreferrer">find a flight</a></article>
         <article class="info-block"><h3>HOTEL</h3><h4>STAY WITH US AT THE VENUE<br>ROOM BLOCK AVAILABLE</h4><a class="script-link" href="https://book.passkey.com/e/50891360" target="_blank" rel="noreferrer">book a room</a></article>
         <article class="info-block"><h3>PARKING</h3><h4>COMPLIMENTARY SELF PARKING<br>AVAILABLE AT VENUE</h4><a class="script-link" href="https://www.google.com/maps/place/Hayes+Mansion+San+Jose,+Curio+Collection+by+Hilton/" target="_blank" rel="noreferrer">get directions</a></article>
-      </div></div></section>
+      </div></div></section>` : ""}
       ${styleSection()}
       ${teluguSection()}
       ${registrySection()}
-      ${faqSection()}
-      ${state.access === "all" ? soCalSection(bg) : ""}
-      ${gallerySection("gallery-sj", "GALLERY - SAN JOSE", 0, 55)}
-      ${gallerySection("gallery-ucla", "GALLERY - UCLA", 55, 110)}
+      ${guestHasGroup("Event Info Access") ? faqSection() : ""}
+      ${guestHasGroup("LA Wedding") ? soCalSection(bg) : ""}
+      ${gallerySection("gallery-sj", "Photography Credit: Andra Blythe", 0, 55)}
+      ${gallerySection("gallery-ucla", "Photography Credit: Mike Yoon", 55, 110)}
+      <section class="rsvp-spacer" aria-hidden="true"></section>
     </main>
-    <footer>Photography Credit: Andra Blythe<br>Photography Credit: Mike Yoon</footer>
     <div class="modal" id="modal"><button onclick="closeModal()">×</button><img alt="" /></div>
   `;
+  window.requestAnimationFrame(syncRsvpReveal);
 }
 
 function styleSection() {
   return `
-    <section class="section" id="style"><div class="inner">
-      <h2 class="subdisplay">Style Guide</h2>
+    <section class="section live-section" id="style">${titleBand("Style Guide", "style")}<div class="content-block text-page">
       <h2>Dress Codes</h2>
       <article class="info-block"><h3>Wedding Ceremony</h3><h4>Love in the Time of the California Superbloom: semiformal, bright, wildflower-like colors</h4><p class="dress-copy">Men: kurta sets, jacket and dress pants, sherwani<br>Women: saree, lehenga, cocktail dress below the knee or longer</p></article>
       <article class="info-block"><h3>Cocktail Hour and Reception</h3><h4>Sunset Glow: formal evening wear in warm colors or jewel tones</h4><p class="dress-copy">Men: sherwani, suits<br>Women: saree, lehenga, formal gown</p><a class="script-link" href="https://www.pinterest.com/javangulakravets/pratyusha-and-elijahs-wedding-outfit-inspiration/" target="_blank" rel="noreferrer">Outfit Inspiration Pinterest Board</a></article>
@@ -262,24 +365,24 @@ function styleSection() {
 }
 
 function teluguSection() {
-  return `<section class="section alt" id="telugu"><div class="inner"><h2 class="display">MORE ABOUT TELUGU WEDDINGS</h2><h3>Pratyusha's family is Telugu, hailing from a southeastern state in India called Andhra Pradhesh. Telugu weddings are rich in culture, tradition, and meaning. Some of the rituals and ceremonies that will take place at Elijah and Pratyusha's Indian wedding ceremony are briefly summarized below.</h3><p class="dress-copy">Please note: the ceremony is quite long (between two and three hours). You are permitted to get up and use the restroom, have water, even chat with your neighbors. You are also most welcome to take photos and videos to your heart's content.</p><div class="rituals">${rituals.map(([n, title, copy]) => `<article class="ritual"><div class="ritual-number">${n}</div><div><h3>${title}</h3><p>${copy}</p></div></article>`).join("")}</div></div></section>`;
+  return `<section class="section live-section" id="telugu">${titleBand("MORE ABOUT TELUGU WEDDINGS", "telugu", { accent: true })}<div class="content-block text-page"><h3>Pratyusha's family is Telugu, hailing from a southeastern state in India called Andhra Pradhesh. Telugu weddings are rich in culture, tradition, and meaning. Some of the rituals and ceremonies that will take place at Elijah and Pratyusha's Indian wedding ceremony are briefly summarized below.</h3><p class="dress-copy">Please note: the ceremony is quite long (between two and three hours). You are permitted to get up and use the restroom, have water, even chat with your neighbors. You are also most welcome to take photos and videos to your heart's content.</p><div class="rituals">${rituals.map(([n, title, copy]) => `<article class="ritual"><div class="ritual-number">${n}</div><div><h3>${title}</h3><p>${copy}</p></div></article>`).join("")}</div></div></section>`;
 }
 
 function registrySection() {
-  return `<section class="section" id="registry"><div class="inner"><h2 class="subdisplay">Gifts</h2><h3>Your presence at our wedding is the greatest gift we could ask for. If you would still like to give us a gift, our registry fund is linked below.</h3><a class="script-link" href="https://blissandbone.sendbirdie.com/r/javangulakravets" target="_blank" rel="noreferrer">Pratyusha & Elijah's Registry</a><h2>The countdown to the big day is on!</h2><div class="countdown"><span><strong>00</strong>days</span><span><strong>00</strong>hours</span><span><strong>00</strong>minutes</span></div></div></section>`;
+  return `<section class="section live-section" id="registry">${titleBand("Gifts", "registry")}<div class="content-block text-page"><h3>Your presence at our wedding is the greatest gift we could ask for. If you would still like to give us a gift, our registry fund is linked below.</h3><a class="script-link" href="https://blissandbone.sendbirdie.com/r/javangulakravets" target="_blank" rel="noreferrer">Pratyusha & Elijah's Registry</a><h2>The countdown to the big day is on!</h2><div class="countdown"><span><strong>00</strong>days</span><span><strong>00</strong>hours</span><span><strong>00</strong>minutes</span></div></div></section>`;
 }
 
 function faqSection() {
-  return `<section class="section alt" id="faq"><div class="inner"><h2 class="subdisplay">faq</h2><div class="faq-list">${faqs.map(([q, a]) => `<article class="faq-item"><h3>${q}</h3><p>${a.replace(/\n/g, "<br>")}</p></article>`).join("")}</div></div></section>`;
+  return `<section class="section live-section" id="faq">${titleBand("faq", "faq")}<div class="content-block text-page"><div class="faq-list">${faqs.map(([q, a]) => `<article class="faq-item"><h3>${q}</h3><p>${a.replace(/\n/g, "<br>")}</p></article>`).join("")}</div></div></section>`;
 }
 
 function soCalSection(bg) {
-  return `<section class="section photo" id="socal" style="background-image:url('${img(bg[7] || bg[0])}')"><div class="inner"><h2 class="display">THE SO CAL WEDDING</h2><h3>MARCH 9 2025<br>AOC WEST HOLLYWOOD<br>LOS ANGELES, CA</h3><a class="script-link" href="https://www.google.com/maps/search/AOC+West+Hollywood/" target="_blank" rel="noreferrer">location and directions</a><h2>Schedule of Events</h2><div class="event-grid"><article class="event"><h3>JEWISH WEDDING CEREMONY</h3><h4>10:30 AM</h4></article><article class="event"><h3>COCKTAIL HOUR</h3><h4>11:15 AM</h4></article><article class="event"><h3>BRUNCH RECEPTION</h3><h4>12:00 PM</h4></article></div><h2>Travel, Stay, and Day-of Logistics</h2><div class="three-grid"><article class="info-block"><h3>FLIGHTS</h3><h4>FLY DIRECTLY INTO LOS ANGELES<br>OR DRIVE IN FROM BURBANK OR ORANGE COUNTY</h4><a class="script-link" href="https://www.flylax.com/" target="_blank" rel="noreferrer">lax international airport</a></article><article class="info-block"><h3>STAY</h3><h4>BOOK YOUR STAY CLOSE BY</h4><p class="so-cal-copy">Airbnb or hotel in West Hollywood or surrounding area (Culver City, Santa Monica, West LA) is recommended.</p><a class="script-link" href="mailto:hello@example.com">email Pratyusha & Elijah for more assistance</a></article><article class="info-block"><h3>PARKING</h3><h4>COMPLIMENTARY VALET<br>AVAILABLE AT VENUE</h4></article></div><h2>DRESS CODE</h2><h3>Semi-Formal</h3><p class="so-cal-copy">Men: jacket and dress pants, suits<br>Women: cocktail dresses, dressy jumpsuits, semi-formal Indian traditional wear.<br><br>Women, please cover your shoulders during the ceremony. Kippot (also known as yarmulkes) will be made available for men.</p></div></section>`;
+  return `<section class="section live-section" id="socal">${titleBand("THE SO CAL WEDDING", "socal")}<div class="content-block text-page"><h3>MARCH 9 2025<br>AOC WEST HOLLYWOOD<br>LOS ANGELES, CA</h3><a class="script-link" href="https://www.google.com/maps/search/AOC+West+Hollywood/" target="_blank" rel="noreferrer">location and directions</a><h2>Schedule of Events</h2><div class="event-grid"><article class="event"><h3>JEWISH WEDDING CEREMONY</h3><h4>10:30 AM</h4></article><article class="event"><h3>COCKTAIL HOUR</h3><h4>11:15 AM</h4></article><article class="event"><h3>BRUNCH RECEPTION</h3><h4>12:00 PM</h4></article></div><h2>Travel, Stay, and Day-of Logistics</h2><div class="three-grid"><article class="info-block"><h3>FLIGHTS</h3><h4>FLY DIRECTLY INTO LOS ANGELES<br>OR DRIVE IN FROM BURBANK OR ORANGE COUNTY</h4><a class="script-link" href="https://www.flylax.com/" target="_blank" rel="noreferrer">lax international airport</a></article><article class="info-block"><h3>STAY</h3><h4>BOOK YOUR STAY CLOSE BY</h4><p class="so-cal-copy">Airbnb or hotel in West Hollywood or surrounding area (Culver City, Santa Monica, West LA) is recommended.</p><a class="script-link" href="mailto:hello@example.com">email Pratyusha & Elijah for more assistance</a></article><article class="info-block"><h3>PARKING</h3><h4>COMPLIMENTARY VALET<br>AVAILABLE AT VENUE</h4></article></div><h2>DRESS CODE</h2><h3>Semi-Formal</h3><p class="so-cal-copy">Men: jacket and dress pants, suits<br>Women: cocktail dresses, dressy jumpsuits, semi-formal Indian traditional wear.<br><br>Women, please cover your shoulders during the ceremony. Kippot (also known as yarmulkes) will be made available for men.</p></div></section>`;
 }
 
-function gallerySection(id, title, start, end) {
+function gallerySection(id, credit, start, end) {
   const files = state.images.gallery.slice(start, end);
-  return `<section class="section" id="${id}"><div class="inner"><h2 class="subdisplay">${title}</h2><div class="gallery">${files.map((file) => `<button type="button" onclick="openModal('${img(file)}')"><img src="${img(file)}" loading="lazy" alt=""></button>`).join("")}</div></div></section>`;
+  return `<section class="gallery-collage" id="${id}">${files.map((file, index) => `<button class="gallery-item ${index % 7 === 1 || index % 7 === 2 ? "short" : "tall"}" type="button" onclick="openModal('${img(file)}')"><img src="${img(file)}" loading="lazy" alt=""></button>`).join("")}<p class="credit">${credit}</p></section>`;
 }
 
 function openMenu() {
@@ -305,7 +408,9 @@ fetch("assets/images.json")
   .then((images) => {
     state.images = images;
     renderLogin();
+    window.addEventListener("hashchange", syncRsvpReveal);
   })
   .catch(() => {
     renderLogin();
+    window.addEventListener("hashchange", syncRsvpReveal);
   });
