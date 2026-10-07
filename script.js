@@ -102,7 +102,7 @@ const titleImages = {
   travel: 2,
   style: 3,
   telugu: 4,
-  registry: 6,
+  registry: 5,
   faq: 6,
   socal: 7,
 };
@@ -208,9 +208,7 @@ function renderRsvpEvents() {
     { id: "preWedding", label: "March 13 2025 9:30am - Pellikuthuru & Pellikoduku (Telugu Bride & Groom Shower)" },
   ];
   const soCal = [
-    { id: "socalCeremony", label: "March 9 2025 10:30am - Jewish Wedding Ceremony" },
-    { id: "socalCocktail", label: "March 9 2025 11:15am - Cocktail Hour" },
-    { id: "socalReception", label: "March 9 2025 12:00pm - Brunch Reception" },
+    { id: "socalWedding", label: "March 9 2025 10:30am - SoCal Wedding" },
   ];
   const profile = guestProfiles[state.guest];
   const events = [...main.filter(({ id }) => profile.mainEvents.includes(id) && (id !== "preWedding" || profile.preWedding)), ...(profile.soCal ? soCal : [])];
@@ -238,6 +236,25 @@ function changeRsvp(button) {
   form.querySelector(".form-fields").classList.add("show");
 }
 
+function sendRsvpCopy(button) {
+  const form = button.closest("form");
+  const email = form.querySelector("#copyEmail");
+  if (!email.reportValidity()) return;
+
+  const responses = [...form.querySelectorAll(".rsvp-card")].map((card) => {
+    const guest = card.querySelector(".large")?.value || "Guest";
+    const answers = [...card.querySelectorAll(".rsvp-row")].map((row) => {
+      const answer = row.querySelector("select").selectedOptions[0].textContent;
+      return `${row.querySelector("h3").textContent}: ${answer}`;
+    });
+    return `${guest}\n${answers.join("\n")}`;
+  });
+  const song = form.querySelector("textarea")?.value;
+  const body = [...responses, song ? `Song request: ${song}` : ""].filter(Boolean).join("\n\n");
+  const subject = "A copy of your RSVP";
+  window.location.href = `mailto:${encodeURIComponent(email.value)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 function navLinks() {
   const links = [
     ["#home", "HOME"],
@@ -256,14 +273,20 @@ function navLinks() {
 }
 
 function titleBand(title, key, options = {}) {
-  const file = state.images.backgrounds[titleImages[key]] || state.images.backgrounds[0];
+  const file = options.plain ? null : state.images.backgrounds[titleImages[key]] || state.images.backgrounds[0];
   const style = file ? ` style="background-image:url('${img(file)}')"` : "";
-  const className = ["title-band", options.red ? "red-title" : "", options.accent ? "accent-title" : "", options.bottom ? "align-bottom" : ""].filter(Boolean).join(" ");
-  return `<div class="${className}"${style}><h2>${title}</h2></div>`;
+  const className = ["title-band", options.plain ? "plain-title" : "", options.red ? "red-title" : "", options.accent ? "accent-title" : "", options.bottom ? "align-bottom" : ""].filter(Boolean).join(" ");
+  const heading = `<h2>${title}</h2>`;
+  const content = options.content ? `<div class="title-band-content">${heading}${options.content}</div>` : heading;
+  return `<div class="${className}"${style}>${content}</div>`;
 }
 
 function revealRsvp() {
-  document.querySelector("#rsvp")?.classList.remove("hidden-rsvp");
+  const rsvp = document.querySelector("#rsvp");
+  if (!rsvp) return;
+  rsvp.classList.remove("hidden-rsvp");
+  rsvp.inert = false;
+  rsvp.setAttribute("aria-hidden", "false");
 }
 
 function scrollToRsvp() {
@@ -299,8 +322,8 @@ function renderSite() {
     </nav>
     <main>
       <section id="home" class="hero" style="background-image:url('${img(bg[0] || "84e14f2cde84607ecc7bf9971b44715c.jpeg")}')"></section>
-      ${guestHasGroup("Event Info Access") ? `<section class="section cover-section" id="rsvp-link"><a href="#rsvp" onclick="openRsvp(event)">${titleBand("Click to RSVP", "rsvp", { red: true })}</a></section>
-      <section class="rsvp-shell hidden-rsvp" id="rsvp">
+      ${guestHasGroup("Event Info Access") ? `<section class="section cover-section" id="rsvp-link"><a href="#rsvp" onclick="openRsvp(event)">${titleBand("Click to<br>RSVP", "rsvp", { plain: true, red: true })}</a></section>
+      <section class="rsvp-shell hidden-rsvp" id="rsvp" inert aria-hidden="true">
         <form class="rsvp" onsubmit="onRsvp(event)">
           <div class="rsvp-intro">
             <h2>Kindly Respond</h2>
@@ -319,8 +342,8 @@ function renderSite() {
             <p><a class="script-link" href="#rsvp" onclick="changeRsvp(this); return false;">↻ Change my RSVP</a></p>
             <div class="copy-row">
               <label for="copyEmail">✉ Send me a copy</label>
-              <input id="copyEmail" type="email" placeholder="Enter Your Email" />
-              <button class="send-arrow" type="button" aria-label="Send copy">→</button>
+              <input id="copyEmail" type="email" placeholder="Enter Your Email" required />
+              <button class="send-arrow" type="button" aria-label="Send copy" onclick="sendRsvpCopy(this)">→</button>
             </div>
           </div>
         </form>
@@ -369,7 +392,7 @@ function teluguSection() {
 }
 
 function registrySection() {
-  return `<section class="section live-section" id="registry">${titleBand("Gifts", "registry")}<div class="content-block text-page"><h3>Your presence at our wedding is the greatest gift we could ask for. If you would still like to give us a gift, our registry fund is linked below.</h3><a class="script-link" href="https://blissandbone.sendbirdie.com/r/javangulakravets" target="_blank" rel="noreferrer">Pratyusha & Elijah's Registry</a><h2>The countdown to the big day is on!</h2><div class="countdown"><span><strong>00</strong>days</span><span><strong>00</strong>hours</span><span><strong>00</strong>minutes</span></div></div></section>`;
+  return `<section class="section live-section" id="registry">${titleBand("Gifts", "registry", { content: `<p class="registry-copy">Your presence at our wedding is the greatest gift we could ask for. If you would still like to give us a gift, our registry fund is linked below.</p><a class="script-link registry-link" href="https://blissandbone.sendbirdie.com/r/javangulakravets" target="_blank" rel="noreferrer">Pratyusha & Elijah's Registry</a>` })}<div class="content-block text-page"><h2>The countdown to the big day is on!</h2><div class="countdown"><span><strong>00</strong>days</span><span><strong>00</strong>hours</span><span><strong>00</strong>minutes</span></div></div></section>`;
 }
 
 function faqSection() {
@@ -377,7 +400,17 @@ function faqSection() {
 }
 
 function soCalSection(bg) {
-  return `<section class="section live-section" id="socal">${titleBand("THE SO CAL WEDDING", "socal")}<div class="content-block text-page"><h3>MARCH 9 2025<br>AOC WEST HOLLYWOOD<br>LOS ANGELES, CA</h3><a class="script-link" href="https://www.google.com/maps/search/AOC+West+Hollywood/" target="_blank" rel="noreferrer">location and directions</a><h2>Schedule of Events</h2><div class="event-grid"><article class="event"><h3>JEWISH WEDDING CEREMONY</h3><h4>10:30 AM</h4></article><article class="event"><h3>COCKTAIL HOUR</h3><h4>11:15 AM</h4></article><article class="event"><h3>BRUNCH RECEPTION</h3><h4>12:00 PM</h4></article></div><h2>Travel, Stay, and Day-of Logistics</h2><div class="three-grid"><article class="info-block"><h3>FLIGHTS</h3><h4>FLY DIRECTLY INTO LOS ANGELES<br>OR DRIVE IN FROM BURBANK OR ORANGE COUNTY</h4><a class="script-link" href="https://www.flylax.com/" target="_blank" rel="noreferrer">lax international airport</a></article><article class="info-block"><h3>STAY</h3><h4>BOOK YOUR STAY CLOSE BY</h4><p class="so-cal-copy">Airbnb or hotel in West Hollywood or surrounding area (Culver City, Santa Monica, West LA) is recommended.</p><a class="script-link" href="mailto:hello@example.com">email Pratyusha & Elijah for more assistance</a></article><article class="info-block"><h3>PARKING</h3><h4>COMPLIMENTARY VALET<br>AVAILABLE AT VENUE</h4></article></div><h2>DRESS CODE</h2><h3>Semi-Formal</h3><p class="so-cal-copy">Men: jacket and dress pants, suits<br>Women: cocktail dresses, dressy jumpsuits, semi-formal Indian traditional wear.<br><br>Women, please cover your shoulders during the ceremony. Kippot (also known as yarmulkes) will be made available for men.</p></div></section>`;
+  const schedule = [
+    ["aee14e2c42e366abf1299906099c5d5d.jpeg", "JEWISH WEDDING CEREMONY", "10:30 AM"],
+    ["9a49eef73e489fae9cd16766096eeef0.jpeg", "COCKTAIL HOUR", "11:15 AM"],
+    ["77dbe4b9b7dad471d083abcb9f9bc4de.jpeg", "BRUNCH RECEPTION", "12:00 PM"],
+  ];
+  const logistics = [
+    ["fffc454029e84940e82de34ecfcc0509.jpeg", "FLIGHTS"],
+    ["5f295bbd71cbd7626ba06b43e67caa68.jpeg", "STAY"],
+    ["20d0e5e3c7b252c1ecb5a258b7a35994.jpeg", "PARKING"],
+  ];
+  return `<section class="section live-section" id="socal">${titleBand("THE SO CAL WEDDING", "socal")}<div class="content-block text-page"><h3>MARCH 9 2025<br>AOC WEST HOLLYWOOD<br>LOS ANGELES, CA</h3><a class="script-link" href="https://www.google.com/maps/place/A.O.C./@34.0734135,-118.3819272,16z/data=!3m1!4b1!4m6!3m5!1s0x80c2b936c5b2a55f:0xa50015511555f764!8m2!3d34.0734135!4d-118.3819272!16s%2Fm%2F0ynj2h8" target="_blank" rel="noreferrer">location and directions</a><h2>Schedule of Events</h2><div class="event-grid socal-event-grid">${schedule.map(([icon, title, time]) => `<article class="event socal-event"><img class="socal-icon" src="${img(icon)}" alt="" aria-hidden="true"><h3>${title}</h3><h4>${time}</h4></article>`).join("")}</div><h2>Travel, Stay, and Day-of Logistics</h2><div class="three-grid socal-logistics-grid"><article class="info-block socal-logistics"><img class="socal-icon" src="${img(logistics[0][0])}" alt="" aria-hidden="true"><h3>FLIGHTS</h3><h4>FLY DIRECTLY INTO LOS ANGELES<br>OR DRIVE IN FROM BURBANK OR ORANGE COUNTY</h4><a class="script-link" href="https://www.google.com/maps/place/Los+Angeles+International+Airport/" target="_blank" rel="noreferrer">lax international airport</a></article><article class="info-block socal-logistics"><img class="socal-icon" src="${img(logistics[1][0])}" alt="" aria-hidden="true"><h3>STAY</h3><h4>BOOK YOUR STAY CLOSE BY</h4><p class="so-cal-copy">Airbnb or hotel in West Hollywood or surrounding area (Culver City, Santa Monica, West LA) is recommended.</p><a class="script-link" href="mailto:javangulakravets@gmail.com">email Pratyusha & Elijah for more assistance</a></article><article class="info-block socal-logistics"><img class="socal-icon" src="${img(logistics[2][0])}" alt="" aria-hidden="true"><h3>PARKING</h3><h4>COMPLIMENTARY VALET<br>AVAILABLE AT VENUE</h4></article></div><h2>DRESS CODE</h2><h3>Semi-Formal</h3><p class="so-cal-copy">Men: jacket and dress pants, suits<br>Women: cocktail dresses, dressy jumpsuits, semi-formal Indian traditional wear.<br><br>Women, please cover your shoulders during the ceremony. Kippot (also known as yarmulkes) will be made available for men.</p></div></section>`;
 }
 
 function gallerySection(id, credit, start, end) {
