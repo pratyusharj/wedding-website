@@ -631,6 +631,14 @@ a {
   max-width: 100%;
 }
 
+#socal .socal-logistics h4 {
+  min-height: 3.2em;
+}
+
+#socal .socal-logistics > .script-link {
+  margin-top: 0;
+}
+
 #events .title-band {
   height: clamp(300px, 36.25vw, 580px);
   min-height: 0;
@@ -1105,6 +1113,10 @@ a {
   .three-grid {
     grid-template-columns: 1fr;
     gap: 30px;
+  }
+
+  #socal .socal-logistics h4 {
+    min-height: 0;
   }
 
   .rsvp-row,
