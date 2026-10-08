@@ -1,6 +1,6 @@
 # Wedding Website Recreation
 
-Static recreation of the Bliss & Bone wedding website.
+Static recreation of my wedding website.
 
 Local guest aliases:
 
