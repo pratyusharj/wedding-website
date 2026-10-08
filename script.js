@@ -269,7 +269,7 @@ function navLinks() {
   if (guestHasGroup("bridal shower")) links.push(["#before", "SUB EVENT"]);
   if (guestHasGroup("LA Wedding")) links.push(["#socal", "THE SO CAL WEDDING"]);
   links.push(["#gallery-sj", "GALLERY - SAN JOSE"], ["#gallery-ucla", "GALLERY - UCLA"]);
-  return links.map(([href, label]) => `<a href="${href}" onclick="${href === "#rsvp" ? "openRsvp(event); " : ""}closeMenu()">${label}</a>`).join("");
+  return links.map(([href, label], index) => `<a href="${href}" style="--nav-item-index:${index}" onclick="${href === "#rsvp" ? "openRsvp(event); " : ""}closeMenu()">${label}</a>`).join("");
 }
 
 function titleBand(title, key, options = {}) {
@@ -314,11 +314,13 @@ function renderSite() {
   document.querySelector("#app").innerHTML = `
     <header class="site-header">
       <a class="brand" href="#home">Pratyusha & Elijah</a>
-      <button class="menu-toggle" aria-label="Open menu" onclick="openMenu()"><span></span><span></span><span></span></button>
+      <button class="menu-toggle" aria-label="Open menu" aria-controls="menu" aria-expanded="false" onclick="openMenu()"><span></span><span></span><span></span></button>
     </header>
-    <nav class="nav-drawer" id="menu">
-      <button class="nav-close" aria-label="Close menu" onclick="closeMenu()">×</button>
-      <div class="nav-links">${navLinks()}</div>
+    <nav class="nav-drawer" id="menu" aria-hidden="true" inert onclick="if (event.target === this) closeMenu()">
+      <div class="nav-panel">
+        <button class="nav-close" aria-label="Close menu" onclick="closeMenu(true)">×</button>
+        <div class="nav-links">${navLinks()}</div>
+      </div>
     </nav>
     <main>
       <section id="home" class="hero" style="background-image:url('${img(bg[0] || "84e14f2cde84607ecc7bf9971b44715c.jpeg")}')"></section>
@@ -419,12 +421,36 @@ function gallerySection(id, credit, start, end) {
 }
 
 function openMenu() {
-  document.querySelector("#menu")?.classList.add("open");
+  const menu = document.querySelector("#menu");
+  const toggle = document.querySelector(".menu-toggle");
+  if (!menu || state.menuOpen) return;
+
+  state.menuOpen = true;
+  menu.inert = false;
+  menu.setAttribute("aria-hidden", "false");
+  menu.classList.add("open");
+  toggle?.setAttribute("aria-expanded", "true");
+  document.body.classList.add("menu-open");
+  document.querySelector(".nav-close")?.focus();
 }
 
-function closeMenu() {
-  document.querySelector("#menu")?.classList.remove("open");
+function closeMenu(restoreFocus = false) {
+  const menu = document.querySelector("#menu");
+  const toggle = document.querySelector(".menu-toggle");
+  if (!menu || !state.menuOpen) return;
+
+  state.menuOpen = false;
+  menu.classList.remove("open");
+  menu.setAttribute("aria-hidden", "true");
+  menu.inert = true;
+  toggle?.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("menu-open");
+  if (restoreFocus) toggle?.focus();
 }
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && state.menuOpen) closeMenu(true);
+});
 
 function openModal(src) {
   const modal = document.querySelector("#modal");

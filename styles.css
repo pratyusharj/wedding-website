@@ -45,6 +45,14 @@ body {
   overflow-x: clip;
 }
 
+body.menu-open {
+  overflow: hidden;
+}
+
+body.menu-open .menu-toggle {
+  visibility: hidden;
+}
+
 button,
 input,
 select,
@@ -269,21 +277,38 @@ a {
 
 .nav-drawer {
   position: fixed;
-  inset: 0 0 0 auto;
+  inset: 0;
   z-index: 40;
-  width: min(440px, 100%);
-  padding: 40px 34px;
-  background: rgba(247, 243, 233, 0.98);
-  transform: translateX(100%);
-  transition: transform 200ms ease;
-  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.12);
+  display: flex;
+  justify-content: flex-end;
+  overflow-y: auto;
+  background: rgba(247, 243, 233, 0.78);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 260ms ease, visibility 0s linear 300ms;
 }
 
 .nav-drawer.open {
-  transform: translateX(0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.nav-panel {
+  position: relative;
+  width: min(860px, 54vw);
+  min-height: 100%;
+  padding: 24px clamp(36px, 12vw, 190px) 32px 0;
 }
 
 .nav-close {
+  position: absolute;
+  top: 22px;
+  right: clamp(24px, 4vw, 60px);
+  width: 42px;
+  height: 42px;
   border: 0;
   background: transparent;
   font-size: 42px;
@@ -293,15 +318,66 @@ a {
 
 .nav-links {
   display: grid;
-  gap: 2px;
-  margin-top: 30px;
+  width: min(500px, 100%);
+  margin: 42px 0 0 auto;
 }
 
 .nav-links a {
+  position: relative;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 0;
+  color: var(--ink);
   text-decoration: none;
   font-size: 27px;
   line-height: 54px;
   letter-spacing: 3px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 260ms ease, transform 260ms ease, color 160ms ease;
+}
+
+.nav-drawer.open .nav-links a {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: calc(var(--nav-item-index) * 45ms);
+}
+
+.nav-links a::after {
+  position: absolute;
+  right: 0;
+  bottom: 1px;
+  left: 0;
+  height: 1px;
+  background: var(--red);
+  content: "";
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 180ms ease;
+}
+
+.nav-links a:hover,
+.nav-links a:focus-visible {
+  color: var(--muted);
+}
+
+.nav-links a:hover::after,
+.nav-links a:focus-visible::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-drawer,
+  .nav-links a,
+  .nav-links a::after {
+    transition-duration: 0.01ms;
+  }
+
+  .nav-links a {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .hero {
@@ -1069,6 +1145,21 @@ a {
     padding: 14px 18px;
   }
 
+  .nav-panel {
+    width: 100%;
+    padding: 18px 24px 28px;
+  }
+
+  .nav-close {
+    top: 14px;
+    right: 18px;
+  }
+
+  .nav-links {
+    width: min(520px, 100%);
+    margin: 44px auto 0;
+  }
+
   .brand {
     font-size: 24px;
     letter-spacing: 4px;
@@ -1169,6 +1260,7 @@ a {
   .nav-links a {
     font-size: 21px;
     line-height: 42px;
+    letter-spacing: 2px;
   }
 }
 
