@@ -362,8 +362,8 @@ function renderSite() {
       ${registrySection()}
       ${guestHasGroup("Event Info Access") ? faqSection() : ""}
       ${guestHasGroup("LA Wedding") ? soCalSection(bg) : ""}
-      ${gallerySection("gallery-sj", "Photography Credit: Andra Blythe", 0, 55)}
-      ${gallerySection("gallery-ucla", "Photography Credit: Mike Yoon", 55, 110)}
+      ${gallerySection("gallery-sj", "Photography Credit: Andra Blythe", 0, 53)}
+      ${gallerySection("gallery-ucla", "Photography Credit: Mike Yoon", 53, 110)}
       <section class="rsvp-spacer" aria-hidden="true"></section>
     </main>
     <div class="modal" id="modal"><button onclick="closeModal()">×</button><img alt="" /></div>
